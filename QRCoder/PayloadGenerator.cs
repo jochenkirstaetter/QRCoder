@@ -844,7 +844,7 @@ namespace QRCoder
                     if (!CultureInfo.GetCultures(CultureTypes.SpecificCultures).Where(x => new RegionInfo(x.LCID).TwoLetterISORegionName.ToUpper() == country.ToUpper()).Any())
                         throw new SwissQrCodeContactException("Country must be a valid \"two letter\" country code as defined by  ISO 3166-1, but it isn't.");
 #else
-                    try { var cultureCheck = new CultureInfo(country.ToUpper()); }
+                    try { var cultureCheck = new RegionInfo(country.ToUpper()); }
                     catch { throw new SwissQrCodeContactException("Country must be a valid \"two letter\" country code as defined by  ISO 3166-1, but it isn't."); }
 #endif
                    
