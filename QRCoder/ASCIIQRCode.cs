@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using static QRCoder.QRCodeGenerator;
 
 namespace QRCoder
 {
@@ -22,7 +23,7 @@ namespace QRCoder
         {
             return string.Join("\n", GetLineByLineGraphic(repeatPerModule));
         }
-                
+
 
         /// <summary>
         /// Returns a strings that contains the resulting QR code as ASCII chars.
@@ -59,8 +60,8 @@ namespace QRCoder
         public string[] GetLineByLineGraphic(int repeatPerModule, string darkColorString, string whiteSpaceString)
         {
             var qrCode = new List<string>();
-            //We need to adjust the repeatPerModule based on number of characters in darkColorString 
-            //(we assume whiteSpaceString has the same number of characters) 
+            //We need to adjust the repeatPerModule based on number of characters in darkColorString
+            //(we assume whiteSpaceString has the same number of characters)
             //to keep the QR code as square as possible.
             var adjustmentValueForNumberOfCharacters = darkColorString.Length / 2 != 1 ? darkColorString.Length / 2 : 0;
             var verticalNumberOfRepeats = repeatPerModule + adjustmentValueForNumberOfCharacters;
@@ -90,6 +91,17 @@ namespace QRCoder
 
             }
             return qrCode.ToArray();
+        }
+    }
+
+    public static class AsciiQRCodeHelper
+    {
+        public static string GetQRCode(string plainText, int pixelsPerModule, string darkColorString, string whiteSpaceString, ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, string endOfLine = "\n")
+        {
+            using (var qrGenerator = new QRCodeGenerator())
+            using (var qrCodeData = qrGenerator.CreateQrCode(plainText, eccLevel, forceUtf8, utf8BOM, eciMode, requestedVersion))
+            using (var qrCode = new AsciiQRCode(qrCodeData))
+                return qrCode.GetGraphic(pixelsPerModule, darkColorString, whiteSpaceString, endOfLine);
         }
     }
 }

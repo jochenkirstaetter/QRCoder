@@ -1,5 +1,5 @@
 # QRCoder
-[![qrcoder MyGet Build Status](https://www.myget.org/BuildSource/Badge/qrcoder?identifier=10cbdaa5-2dd9-460b-b424-be44e75258ec)](https://www.myget.org/feed/qrcoder/package/nuget/QRCoder)
+[![qrcoder MyGet Build Status](https://www.myget.org/BuildSource/Badge/qrcoder?identifier=10cbdaa5-2dd9-460b-b424-be44e75258ec)](https://www.myget.org/feed/qrcoder/package/nuget/QRCoder)   [![NuGet Badge](https://buildstats.info/nuget/QRCoder)](https://www.nuget.org/packages/QRCoder/)
 ## Info 
 
 QRCoder is a simple library, written in C#.NET, which enables you to create QR codes. It hasn't any dependencies to other libraries and is available as .NET Framework and .NET Core PCL version on NuGet.
@@ -51,7 +51,7 @@ The GetGraphics-method has some more overloads. The first two enable you to set 
 
 ```csharp
 //Set color by using Color-class types
-Bitmap qrCodeImage = qrCode.GetGraphic(20, Color.DarkRed, Color.PaleGreen);
+Bitmap qrCodeImage = qrCode.GetGraphic(20, Color.DarkRed, Color.PaleGreen, true);
 
 //Set color by using HTML hex color notation
 Bitmap qrCodeImage = qrCode.GetGraphic(20, "#000ff0", "#0ff000");
@@ -76,10 +76,12 @@ Besides the normal QRCode class (which is shown in the example above) for creati
 * [PngByteQRCode<sup></sup>](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers#25-pngbyteqrcode-renderer-in-detail)
 * [PostscriptQRCode<sup>*</sup>](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers#29-postscriptqrcode-renderer-in-detail)
 * [SvgQRCode<sup>*</sup>](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers#26-svgqrcode-renderer-in-detail)
-* [UnityQRCode<sup>*</sup>](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers#27-unityqrcode-renderer-in-detail)
+* [UnityQRCode<sup>**</sup>](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers#27-unityqrcode-renderer-in-detail)
 * [XamlQRCode<sup>*</sup>](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers#28-xamlqrcode-renderer-in-detail)
 
-*(&ast;) - These classes are only available in the .NET Framework/.NET Standard version. If you use the PCL version (e.g. for Universal apps), you have to use either BitmapByteQRCode or PngByteQRCode classes.*
+*(&ast;) - These classes are only available in the .NET Framework/.NET Standard version. If you use the PCL version (e.g. for Universal apps), you have to use either BitmapByteQRCode or PngByteQRCode classes.*  
+*(&ast;&ast;) - This class is hosted in an own package ([QRCoder.Unity](https://github.com/codebude/QRCoder.Unity)).*
+
 
 For more information about the different rendering types click on one of the types in the list above or have a look at: [Wiki: Advanced usage - QR-Code renderers](https://github.com/codebude/QRCoder/wiki/Advanced-usage---QR-Code-renderers)
 

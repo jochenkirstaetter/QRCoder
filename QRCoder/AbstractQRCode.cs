@@ -3,7 +3,7 @@
     public abstract class AbstractQRCode
     {
         protected QRCodeData QrCodeData { get; set; }
-        
+
         protected AbstractQRCode() {
         }
 
@@ -21,6 +21,7 @@
 
         public void Dispose()
         {
+            this.QrCodeData?.Dispose();
             this.QrCodeData = null;
         }
     }

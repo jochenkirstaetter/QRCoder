@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿#if NETFRAMEWORK || NETSTANDARD2_0
+using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
-using System.Text;
+using static QRCoder.Base64QRCode;
+using static QRCoder.QRCodeGenerator;
 
 namespace QRCoder
 {
@@ -27,12 +26,12 @@ namespace QRCoder
         public override void SetQRCodeData(QRCodeData data) {
             this.qr.SetQRCodeData(data);
         }
-        
+
         public string GetGraphic(int pixelsPerModule)
         {
             return this.GetGraphic(pixelsPerModule, Color.Black, Color.White, true);
         }
-                
+
 
         public string GetGraphic(int pixelsPerModule, string darkColorHtmlHex, string lightColorHtmlHex, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
         {
@@ -65,7 +64,7 @@ namespace QRCoder
             var base64 = string.Empty;
             ImageFormat iFormat;
             switch (imgType) {
-                case ImageType.Png: 
+                case ImageType.Png:
                     iFormat = ImageFormat.Png;
                     break;
                 case ImageType.Jpeg:
@@ -82,7 +81,7 @@ namespace QRCoder
             {
                 bmp.Save(memoryStream, iFormat);
                 base64 = Convert.ToBase64String(memoryStream.ToArray(), Base64FormattingOptions.None);
-            }                
+            }
             return base64;
         }
 
@@ -91,7 +90,20 @@ namespace QRCoder
             Gif,
             Jpeg,
             Png
-        }      
+        }
 
     }
+
+    public static class Base64QRCodeHelper
+    {
+        public static string GetQRCode(string plainText, int pixelsPerModule, string darkColorHtmlHex, string lightColorHtmlHex, ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
+        {
+            using (var qrGenerator = new QRCodeGenerator())
+            using (var qrCodeData = qrGenerator.CreateQrCode(plainText, eccLevel, forceUtf8, utf8BOM, eciMode, requestedVersion))
+            using (var qrCode = new Base64QRCode(qrCodeData))
+                return qrCode.GetGraphic(pixelsPerModule, darkColorHtmlHex, lightColorHtmlHex, drawQuietZones, imgType);
+        }
+    }
 }
+
+#endif

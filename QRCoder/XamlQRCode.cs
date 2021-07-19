@@ -1,6 +1,8 @@
-﻿using System;
+﻿#if NETFRAMEWORK
+using System;
 using System.Windows;
 using System.Windows.Media;
+using static QRCoder.QRCodeGenerator;
 
 namespace QRCoder
 {
@@ -20,7 +22,7 @@ namespace QRCoder
 
         public DrawingImage GetGraphic(int pixelsPerModule, bool drawQuietZones)
         {
-            var drawableModulesCount = this.QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : 8);
+            var drawableModulesCount = GetDrawableModulesCount(drawQuietZones);
             var viewBox = new Size(pixelsPerModule * drawableModulesCount, pixelsPerModule * drawableModulesCount);
             return this.GetGraphic(viewBox, new SolidColorBrush(Colors.Black), new SolidColorBrush(Colors.White), drawQuietZones);
         }
@@ -32,14 +34,14 @@ namespace QRCoder
 
         public DrawingImage GetGraphic(int pixelsPerModule, string darkColorHex, string lightColorHex, bool drawQuietZones = true)
         {
-            var drawableModulesCount = this.QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : 8);
+            var drawableModulesCount = GetDrawableModulesCount(drawQuietZones);
             var viewBox = new Size(pixelsPerModule * drawableModulesCount, pixelsPerModule * drawableModulesCount);
             return this.GetGraphic(viewBox, new SolidColorBrush((Color)ColorConverter.ConvertFromString(darkColorHex)), new SolidColorBrush((Color)ColorConverter.ConvertFromString(lightColorHex)), drawQuietZones);
         }
 
         public DrawingImage GetGraphic(Size viewBox, Brush darkBrush, Brush lightBrush, bool drawQuietZones = true)
         {
-            var drawableModulesCount = this.QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : 8);
+            var drawableModulesCount = GetDrawableModulesCount(drawQuietZones);
             var qrSize = Math.Min(viewBox.Width, viewBox.Height);
             var unitsPerModule = qrSize / drawableModulesCount;
             var offsetModules = drawQuietZones ? 0 : 4;
@@ -48,23 +50,48 @@ namespace QRCoder
             drawing.Children.Add(new GeometryDrawing(lightBrush, null, new RectangleGeometry(new Rect(new Point(0, 0), new Size(qrSize, qrSize)))));
 
             var group = new GeometryGroup();
-            int xi = 0, yi = 0;
-            for (var x = 0d; x < qrSize; x = x + unitsPerModule)
+            double x = 0d, y = 0d;
+            for (int xi = offsetModules; xi < drawableModulesCount + offsetModules; xi++)
             {
-                yi = 0;
-                for (var y = 0d; y < qrSize; y = y + unitsPerModule)
+                y = 0d;
+                for (int yi = offsetModules; yi < drawableModulesCount + offsetModules; yi++)
                 {
-                    if (this.QrCodeData.ModuleMatrix[yi + offsetModules][xi + offsetModules])
+                    if (this.QrCodeData.ModuleMatrix[yi][xi])
                     {
                         group.Children.Add(new RectangleGeometry(new Rect(x, y, unitsPerModule, unitsPerModule)));
                     }
-                    yi++;
+                    y += unitsPerModule;
                 }
-                xi++;
+                x += unitsPerModule;
             }
             drawing.Children.Add(new GeometryDrawing(darkBrush, null, group));
 
             return new DrawingImage(drawing);
         }
+
+        private int GetDrawableModulesCount(bool drawQuietZones = true)
+        {
+            return this.QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : 8);
+        }
+
+        public double GetUnitsPerModule(Size viewBox, bool drawQuietZones = true)
+        {
+            var drawableModulesCount = GetDrawableModulesCount(drawQuietZones);
+            var qrSize = Math.Min(viewBox.Width, viewBox.Height);
+            return qrSize / drawableModulesCount;
+        }
+    }
+
+    public static class XamlQRCodeHelper
+    {
+        public static DrawingImage GetQRCode(string plainText, int pixelsPerModule, string darkColorHex, string lightColorHex, ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, bool drawQuietZones = true)
+        {
+            using (var qrGenerator = new QRCodeGenerator())
+            using (var qrCodeData = qrGenerator.CreateQrCode(plainText, eccLevel, forceUtf8, utf8BOM, eciMode, requestedVersion))
+            using (var qrCode = new XamlQRCode(qrCodeData))
+                return qrCode.GetGraphic(pixelsPerModule, darkColorHex, lightColorHex, drawQuietZones);
+        }
     }
 }
+
+#endif

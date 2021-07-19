@@ -7,14 +7,15 @@ using System.Threading;
 using QRCoderTests.XUnitExtenstions;
 using static QRCoder.PayloadGenerator.BezahlCode;
 using static QRCoder.PayloadGenerator.SwissQrCode.Reference;
-
+using System.Reflection;
+using static QRCoder.PayloadGenerator.SwissQrCode.AdditionalInformation;
 
 namespace QRCoderTests
 {
-   
+
     public class PayloadGeneratorTests
     {
-        
+
         [Fact]
         [Category("PayloadGenerator/BitcoinAddress")]
         public void bitcoin_address_generator_can_generate_address()
@@ -81,8 +82,13 @@ namespace QRCoderTests
         [Category("PayloadGenerator/BitcoinAddress")]
         public void bitcoin_address_generator_disregards_current_culture()
         {
+#if NETCOREAPP1_1
+            var currentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("de-DE");
+#else
             var currentCulture = Thread.CurrentThread.CurrentCulture;
             Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+#endif
 
             var address = "175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W";
             var amount = .123;
@@ -93,8 +99,12 @@ namespace QRCoderTests
             generator
                 .ToString()
                 .ShouldBe("bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?amount=.123");
-                        
+
+#if NETCOREAPP1_1
+            CultureInfo.DefaultThreadCurrentCulture = currentCulture;
+#else
             Thread.CurrentThread.CurrentCulture = currentCulture;
+#endif
         }
 
 
@@ -230,7 +240,7 @@ namespace QRCoderTests
             generator.ToString().ShouldBe($"WIFI:T:WPA;S:\"0XA9B7F18CCE\";P:\"0X00105F0E6\";H:true;");
         }
 
-        
+
         [Fact]
         [Category("PayloadGenerator/Mail")]
         public void mail_should_build_type_mailto()
@@ -256,7 +266,7 @@ namespace QRCoderTests
             var encoding = PayloadGenerator.Mail.MailEncoding.MATMSG;
 
             var generator = new PayloadGenerator.Mail(receiver, subject, message, encoding);
-            
+
             generator.ToString().ShouldBe("MATMSG:TO:john@doe.com;SUB:A test mail;BODY:Just see if it works!;;");
         }
 
@@ -399,7 +409,7 @@ namespace QRCoderTests
             generator.ToString().ShouldBe("mmsto:01601234567?subject=A%20tiny%20SMS");
         }
 
-                
+
         [Fact]
         [Category("PayloadGenerator/MMS")]
         public void mms_should_add_unused_params()
@@ -444,7 +454,7 @@ namespace QRCoderTests
         [Category("PayloadGenerator/Geolocation")]
         public void geolocation_should_escape_input()
         {
-            var latitude = "51,227741"; 
+            var latitude = "51,227741";
             var longitude = "6,773456";
             var encoding = PayloadGenerator.Geolocation.GeolocationEncoding.GEO;
 
@@ -460,7 +470,7 @@ namespace QRCoderTests
         {
             var latitude = "51.227741";
             var longitude = "6.773456";
-         
+
             var generator = new PayloadGenerator.Geolocation(latitude, longitude);
 
             generator.ToString().ShouldBe("geo:51.227741,6.773456");
@@ -561,8 +571,8 @@ namespace QRCoderTests
             var description = "A small party for the new QRCoder. Bring some beer!";
             var location = "Programmer's paradise, Beachtown, Paradise";
             var alldayEvent = false;
-            var begin = new DateTime(2016,01,03,12,00,00);
-            var end = new DateTime(2016,01,03,14,30,0);
+            var begin = new DateTime(2016, 01, 03, 12, 00, 00);
+            var end = new DateTime(2016, 01, 03, 14, 30, 0);
             var encoding = PayloadGenerator.CalendarEvent.EventEncoding.Universal;
 
             var generator = new PayloadGenerator.CalendarEvent(subject, description, location, begin, end, alldayEvent, encoding);
@@ -640,6 +650,71 @@ namespace QRCoderTests
 
             generator.ToString().ShouldBe($"BEGIN:VEVENT{Environment.NewLine}SUMMARY:Release party{Environment.NewLine}DESCRIPTION:A small party for the new QRCoder. Bring some beer!{Environment.NewLine}LOCATION:Programmer's paradise, Beachtown, Paradise{Environment.NewLine}DTSTART:20160103T120000{Environment.NewLine}DTEND:20160103T143000{Environment.NewLine}END:VEVENT");
         }
+
+
+        [Fact]
+        [Category("PayloadGenerator/IbanValidator")]
+        public void iban_validator_validate_german_iban()
+        {
+            var iban = "DE15268500010154131577";
+
+            MethodInfo method = typeof(PayloadGenerator).GetMethod("IsValidIban", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (bool)method.Invoke(null, new object[] { iban });
+
+            result.ShouldBe<bool>(true);
+        }
+
+
+        [Fact]
+        [Category("PayloadGenerator/IbanValidator")]
+        public void iban_validator_validate_swiss_iban()
+        {
+            var iban = "CH1900767000U00121977";
+
+            MethodInfo method = typeof(PayloadGenerator).GetMethod("IsValidIban", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (bool)method.Invoke(null, new object[] { iban });
+
+            result.ShouldBe<bool>(true);
+        }
+
+
+        [Fact]
+        [Category("PayloadGenerator/IbanValidator")]
+        public void iban_validator_invalidates_iban()
+        {
+            var iban = "DE29268500010154131577";
+
+            MethodInfo method = typeof(PayloadGenerator).GetMethod("IsValidIban", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (bool)method.Invoke(null, new object[] { iban });
+
+            result.ShouldBe<bool>(false);
+        }
+
+
+        [Fact]
+        [Category("PayloadGenerator/QrIbanValidator")]
+        public void qriban_validator_validates_iban()
+        {
+            var iban = "CH2430043000000789012";
+
+            MethodInfo method = typeof(PayloadGenerator).GetMethod("IsValidQRIban", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (bool)method.Invoke(null, new object[] { iban });
+
+            result.ShouldBe<bool>(true);
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/QrIbanValidator")]
+        public void qriban_validator_invalidates_iban()
+        {
+            var iban = "CH3908704016075473007";
+
+            MethodInfo method = typeof(PayloadGenerator).GetMethod("IsValidQRIban", BindingFlags.NonPublic | BindingFlags.Static);
+            var result = (bool)method.Invoke(null, new object[] { iban });
+
+            result.ShouldBe<bool>(false);
+        }
+
 
         [Fact]
         [Category("PayloadGenerator/Girocode")]
@@ -776,7 +851,7 @@ namespace QRCoderTests
             var purposeOfCreditTransfer = "1234";
             var messageToGirocodeUser = "Thanks for using Girocode";
 
-          
+
             var exception = Record.Exception(() => new PayloadGenerator.Girocode(iban, bic, name, amount, remittanceInformation,
                 PayloadGenerator.Girocode.TypeOfRemittance.Unstructured, purposeOfCreditTransfer, messageToGirocodeUser));
 
@@ -994,7 +1069,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1014,7 +1089,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1034,7 +1109,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singledirectdebit?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singledirectdebit?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1075,7 +1150,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1091,14 +1166,14 @@ namespace QRCoderTests
             var amount = 10.00m;
             Currency currency = Currency.USD;
 
-            var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepaymentsepa, name, iban, bic, amount, "", 0, null, null, "", "", new DateTime(2017,03,01), reason, sepaReference, currency, DateTime.Now);
+            var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepaymentsepa, name, iban, bic, amount, "", 0, null, null, "", "", new DateTime(2017, 03, 01), reason, sepaReference, currency, DateTime.Now);
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&separeference=Fake%20SEPA%20reference&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&separeference=Fake%20SEPA%20reference&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
-        
+
         [Fact]
         [Category("PayloadGenerator/BezahlCode")]
         public void bezahlcode_generator_can_generate_payload_singledirectdebitsepa()
@@ -1113,11 +1188,11 @@ namespace QRCoderTests
             var amount = 10.00m;
             Currency currency = Currency.USD;
 
-            var generator = new PayloadGenerator.BezahlCode(AuthorityType.singledirectdebitsepa, name, iban, bic, amount, "", 0, null, null, creditorId, mandateId, new DateTime(2017,03,01), reason, sepaReference, currency, DateTime.Now);
+            var generator = new PayloadGenerator.BezahlCode(AuthorityType.singledirectdebitsepa, name, iban, bic, amount, "", 0, null, null, creditorId, mandateId, new DateTime(2017, 03, 01), reason, sepaReference, currency, DateTime.Now);
 
             generator
                 .ToString()
-                .ShouldBe("bank://singledirectdebitsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&separeference=Fake%20SEPA%20reference&creditorid=DE%2002%20TSV%2001234567890&mandateid=987543CB2&dateofsignature=01032017&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singledirectdebitsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&separeference=Fake%20SEPA%20reference&creditorid=DE%2002%20TSV%2001234567890&mandateid=987543CB2&dateofsignature=01032017&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1141,7 +1216,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://periodicsinglepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&separeference=Fake%20SEPA%20reference&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"&periodictimeunit=M&periodictimeunitrotation=1&periodicfirstexecutiondate=" + periodicFirstExecutionDate.ToString("ddMMyyyy") + "&periodiclastexecutiondate=" + periodicLastExecutionDate.ToString("ddMMyyyy"));
+                .ShouldBe("bank://periodicsinglepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&separeference=Fake%20SEPA%20reference&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "&periodictimeunit=M&periodictimeunitrotation=1&periodicfirstexecutiondate=" + periodicFirstExecutionDate.ToString("ddMMyyyy") + "&periodiclastexecutiondate=" + periodicLastExecutionDate.ToString("ddMMyyyy"));
         }
 
 
@@ -1241,7 +1316,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=01194700&bnc=100205000&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=01194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1258,7 +1333,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1275,7 +1350,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1292,7 +1367,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepaymentsepa?name=Wikimedia%20F%C3%B6rdergesellschaft&iban=DE33100205000001194700&bic=BFSWDE33BER&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1309,7 +1384,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate="+DateTime.Now.ToString("ddMMyyyy")+"");
+                .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
         }
 
 
@@ -1336,7 +1411,7 @@ namespace QRCoderTests
             var iban = "DE33100205000001194700";
             var bic = "BFSWDE33BER";
             var name = "Wikimedia Fördergesellschaft";
-                  
+
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.periodicsinglepaymentsepa, name, iban: iban, bic: bic));
 
             Assert.NotNull(exception);
@@ -1353,7 +1428,7 @@ namespace QRCoderTests
             var bnc = "100205000";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10;
-            
+
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepaymentsepa, name, account: account, bnc: bnc, amount: amount));
 
             Assert.NotNull(exception);
@@ -1393,7 +1468,7 @@ namespace QRCoderTests
             var bic = "BFSWDE33BER";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-                  
+
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, iban: iban, bic: bic, amount: amount));
 
             Assert.NotNull(exception);
@@ -1417,7 +1492,7 @@ namespace QRCoderTests
             var periodicFirstExecutionDate = DateTime.Now;
             var periodicLastExecutionDate = DateTime.Now.AddMonths(3);
             Currency currency = Currency.USD;
-            
+
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.periodicsinglepaymentsepa, name, iban, bic, amount, periodicTimeunit, periodicTimeunitRotation, periodicFirstExecutionDate, periodicLastExecutionDate, "", "", new DateTime(2017, 03, 01), reason, sepaReference, currency, DateTime.Now));
 
             Assert.NotNull(exception);
@@ -1565,7 +1640,7 @@ namespace QRCoderTests
             var sepaReference = "Fake SEPA reference which is also much to long for the reference field.";
             var amount = 10.00m;
             Currency currency = Currency.USD;
-            
+
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singledirectdebitsepa, name, iban, bic, amount, "", 0, null, null, creditorId, mandateId, new DateTime(2017, 03, 01), reason, sepaReference, currency, DateTime.Now));
 
             Assert.NotNull(exception);
@@ -1666,7 +1741,7 @@ namespace QRCoderTests
             var postingKey = 69;
             var executionDate = new DateTime(2017, 1, 1);
             Currency currency = Currency.USD;
-            
+
 
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account, bnc, amount, "", 0, null, null, reason, postingKey, currency, executionDate));
 
@@ -1691,7 +1766,7 @@ namespace QRCoderTests
             var periodicFirstExecutionDate = DateTime.Now;
             var periodicLastExecutionDate = DateTime.Now.AddMonths(3);
             Currency currency = Currency.USD;
-                        
+
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.periodicsinglepaymentsepa, name, iban, bic, amount, periodicTimeunit, periodicTimeunitRotation, periodicFirstExecutionDate, periodicLastExecutionDate, "", "", new DateTime(2017, 03, 01), reason, sepaReference, currency, DateTime.Now));
 
             Assert.NotNull(exception);
@@ -1723,8 +1798,8 @@ namespace QRCoderTests
             exception.Message.ShouldBe("The periodicTimeunitRotation must be 1 or greater. (It means repeat the payment every 'periodicTimeunitRotation' weeks/months.");
         }
 
-        
-        
+
+
         [Fact]
         [Category("PayloadGenerator/SwissQrCode.Reference")]
         public void swissqrcode_generator_should_throw_reference_not_allowed()
@@ -1785,7 +1860,7 @@ namespace QRCoderTests
             Assert.IsType<SwissQrCodeReferenceException>(exception);
             exception.Message.ShouldBe("QR-reference must exist out of digits only.");
         }
-        
+
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode.Reference")]
@@ -1801,7 +1876,7 @@ namespace QRCoderTests
             Assert.IsType<SwissQrCodeReferenceException>(exception);
             exception.Message.ShouldBe("QR-references is invalid. Checksum error.");
         }
-        
+
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode.Reference")]
@@ -1819,22 +1894,20 @@ namespace QRCoderTests
         }
 
         [Fact]
-        [Category("PayloadGenerator/SwissQrCode.Reference")]
+        [Category("PayloadGenerator/SwissQrCode.AdditionalInformation")]
         public void swissqrcode_generator_should_throw_unstructured_msg_too_long()
         {
-            var refType = ReferenceType.QRR;
-            var reference = "990005000000000320071012303";
-            var refTextType = ReferenceTextType.QrReference;
-            var unstructuredMessage = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et mag";
+            var billInformation = "This is sample bill information with a length below 140.";
+            var unstructuredMessage = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Reference(refType, reference, refTextType, unstructuredMessage));
+            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.AdditionalInformation(unstructuredMessage, billInformation));
 
             Assert.NotNull(exception);
-            Assert.IsType<SwissQrCodeReferenceException>(exception);
-            exception.Message.ShouldBe("The unstructured message must be shorter than 141 chars.");
+            Assert.IsType<SwissQrCodeAdditionalInformationException>(exception);
+            exception.Message.ShouldBe("Unstructured message and bill information must be shorter than 141 chars in total/combined.");
         }
 
-        
+
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode.Iban")]
@@ -1854,14 +1927,14 @@ namespace QRCoderTests
         [Category("PayloadGenerator/SwissQrCode.Iban")]
         public void swissqrcode_generator_should_generate_iban_qr()
         {
-            var iban = "CH2609000000857666015";
+            var iban = "CH2430043000000789012";
             var ibanType = PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban;
 
             var generator = new PayloadGenerator.SwissQrCode.Iban(iban, ibanType);
 
             generator
                 .ToString()
-                .ShouldBe("CH2609000000857666015");
+                .ShouldBe("CH2430043000000789012");
         }
 
         [Fact]
@@ -1884,12 +1957,26 @@ namespace QRCoderTests
         {
             var iban = "CHC2609000000857666015";
             var ibanType = PayloadGenerator.SwissQrCode.Iban.IbanType.Iban;
-                     
+
             var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Iban(iban, ibanType));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Iban.SwissQrCodeIbanException>(exception);
             exception.Message.ShouldBe("The IBAN entered isn't valid.");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/SwissQrCode.Iban")]
+        public void swissqrcode_generator_should_throw_invalid_qriban()
+        {
+            var iban = "CHC2609000000857666015";
+            var ibanType = PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban;
+
+            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Iban(iban, ibanType));
+
+            Assert.NotNull(exception);
+            Assert.IsType<PayloadGenerator.SwissQrCode.Iban.SwissQrCodeIbanException>(exception);
+            exception.Message.ShouldBe("The QR-IBAN entered isn't valid.");
         }
 
         [Fact]
@@ -1916,12 +2003,12 @@ namespace QRCoderTests
             var zip = "3003";
             var city = "Bern";
             var country = "CH";
-           
-            var generator = new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country);
+
+            var generator = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, null, null);
 
             generator
                 .ToString()
-                .ShouldBe("John Doe\r\n\r\n\r\n3003\r\nBern\r\nCH\r\n");
+                .ShouldBe("S\r\nJohn Doe\r\n\r\n\r\n3003\r\nBern\r\nCH\r\n");
         }
 
         [Fact]
@@ -1935,11 +2022,11 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var generator = new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber);
+            var generator = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber);
 
             generator
                 .ToString()
-                .ShouldBe("John Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n");
+                .ShouldBe("S\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n");
         }
 
 
@@ -1954,7 +2041,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -1973,7 +2060,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -1992,7 +2079,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude in der wunderschönen aber auch ziemlich teuren Stadt Bern in der Schweiz";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -2011,11 +2098,11 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude 1 ♥";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
-            exception.Message.ShouldBe(@"Street must match the following pattern as defined in pain.001: ^([a-zA-Z0-9\.,;:'\ \-/\(\)?\*\[\]\{\}\\`´~ ]|[!""#%&<>÷=@_$£]|[àáâäçèéêëìíîïñòóôöùúûüýßÀÁÂÄÇÈÉÊËÌÍÎÏÒÓÔÖÙÚÛÜÑ])*$");
+            exception.Message.ShouldBe(@"Street must match the following pattern as defined in pain.001: ^([a-zA-Z0-9\.,;:'\ \+\-/\(\)?\*\[\]\{\}\\`´~ ]|[!""#%&<>÷=@_$£]|[àáâäçèéêëìíîïñòóôöùúûüýßÀÁÂÄÇÈÉÊËÌÍÎÏÒÓÔÖÙÚÛÜÑ])*$");
         }
 
 
@@ -2030,7 +2117,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "123456789123456789";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -2049,7 +2136,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -2067,7 +2154,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -2086,11 +2173,11 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
-            exception.Message.ShouldBe(@"Zip code must match the following pattern as defined in pain.001: ^([a-zA-Z0-9\.,;:'\ \-/\(\)?\*\[\]\{\}\\`´~ ]|[!""#%&<>÷=@_$£]|[àáâäçèéêëìíîïñòóôöùúûüýßÀÁÂÄÇÈÉÊËÌÍÎÏÒÓÔÖÙÚÛÜÑ])*$");
+            exception.Message.ShouldBe(@"Zip code must match the following pattern as defined in pain.001: ^([a-zA-Z0-9\.,;:'\ \+\-/\(\)?\*\[\]\{\}\\`´~ ]|[!""#%&<>÷=@_$£]|[àáâäçèéêëìíîïñòóôöùúûüýßÀÁÂÄÇÈÉÊËÌÍÎÏÒÓÔÖÙÚÛÜÑ])*$");
         }
 
 
@@ -2105,7 +2192,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -2124,7 +2211,7 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
@@ -2143,21 +2230,21 @@ namespace QRCoderTests
             var street = "Parlamentsgebäude";
             var houseNumber = "1";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode.Contact(name, zip, city, country, street, houseNumber));
+            var exception = Record.Exception(() => PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress(name, zip, city, country, street, houseNumber));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.Contact.SwissQrCodeContactException>(exception);
             exception.Message.ShouldBe("Country must be a valid \"two letter\" country code as defined by  ISO 3166-1, but it isn't.");
         }
 
-           
+
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_generate_swisscode_simple()
         {
-            var creditor = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
-            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.Iban);
+            var creditor = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR, "990005000000000320071012303", ReferenceTextType.QrReference);
             var currency = PayloadGenerator.SwissQrCode.Currency.EUR;
 
@@ -2165,25 +2252,46 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("SPC\r\n0100\r\n1\r\nCH2609000000857666015\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nEUR\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nQRR\r\n990005000000000320071012303\r\n\r\n");
+                .ShouldBe("SPC\r\n0200\r\n1\r\nCH2430043000000789012\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nEUR\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\nQRR\r\n990005000000000320071012303\r\n\r\nEPD\r\n");
         }
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_generate_swisscode_full()
         {
-            var contactGeneral = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
-            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.Iban);
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR, "990005000000000320071012303", ReferenceTextType.QrReference);
             var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
             var amount = 100.25m;
             var reqDateOfPayment = new DateTime(2017, 03, 01);
-           
-            var generator = new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, contactGeneral, amount, reqDateOfPayment, contactGeneral);
+
+            var generator = new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral);
 
             generator
                 .ToString()
-                .ShouldBe("SPC\r\n0100\r\n1\r\nCH2609000000857666015\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n100,25\r\nCHF\r\n2017-03-01\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nQRR\r\n990005000000000320071012303\r\n\r\n");
+                .ShouldBe("SPC\r\n0200\r\n1\r\nCH2430043000000789012\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n100.25\r\nCHF\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nQRR\r\n990005000000000320071012303\r\nThis is my unstructured message.\r\nEPD\r\nSome bill information here...");
+        }
+
+
+        [Fact]
+        [Category("PayloadGenerator/SwissQrCode")]
+        public void swissqrcode_generator_should_generate_clean_end_linebreaks()
+        {
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
+            var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR, "990005000000000320071012303", ReferenceTextType.QrReference);
+            var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.");
+            var amount = 100.25m;
+            var reqDateOfPayment = new DateTime(2017, 03, 01);
+
+            var generator = new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral);
+
+            generator
+                .ToString()
+                .ShouldBe("SPC\r\n0200\r\n1\r\nCH2430043000000789012\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n100.25\r\nCHF\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nQRR\r\n990005000000000320071012303\r\nThis is my unstructured message.\r\nEPD\r\n");
         }
 
 
@@ -2191,32 +2299,53 @@ namespace QRCoderTests
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_generate_swisscode_full_alt()
         {
-            var contactGeneral = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
-            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.Iban);
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR, "990005000000000320071012303", ReferenceTextType.QrReference);
             var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
             var amount = 100.25m;
             var reqDateOfPayment = new DateTime(2017, 03, 01);
 
-            var generator = new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, contactGeneral, amount, reqDateOfPayment, contactGeneral, "alt1", "alt2");
+            var generator = new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral, "alt1", "alt2");
 
             generator
                 .ToString()
-                .ShouldBe("SPC\r\n0100\r\n1\r\nCH2609000000857666015\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n100,25\r\nCHF\r\n2017-03-01\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nQRR\r\n990005000000000320071012303\r\n\r\nalt1\r\nalt2\r\n");
+                .ShouldBe("SPC\r\n0200\r\n1\r\nCH2430043000000789012\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n100.25\r\nCHF\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nQRR\r\n990005000000000320071012303\r\nThis is my unstructured message.\r\nEPD\r\nSome bill information here...\r\nalt1\r\nalt2");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/SwissQrCode")]
+        public void swissqrcode_generator_should_not_generate_space_as_thousands_separator()
+        {
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.Iban);
+            var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.SCOR, "99000500000000032003", ReferenceTextType.CreditorReferenceIso11649);
+            var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
+            var amount = 1234567.89m;
+            var reqDateOfPayment = new DateTime(2017, 03, 01);
+
+            var generator = new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral, "alt1", "alt2");
+
+            generator
+                .ToString()
+                .ShouldBe("SPC\r\n0200\r\n1\r\nCH2609000000857666015\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n1234567.89\r\nCHF\r\nS\r\nJohn Doe\r\nParlamentsgebäude\r\n1\r\n3003\r\nBern\r\nCH\r\nSCOR\r\n99000500000000032003\r\nThis is my unstructured message.\r\nEPD\r\nSome bill information here...\r\nalt1\r\nalt2");
         }
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_throw_amount_too_big()
         {
-            var contactGeneral = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
             var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.Iban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR, "990005000000000320071012303", ReferenceTextType.QrReference);
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
             var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
             var amount = 1234567891.25m;
             var reqDateOfPayment = new DateTime(2017, 03, 01);
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, contactGeneral, amount, reqDateOfPayment, contactGeneral));
+            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.SwissQrCodeException>(exception);
@@ -2227,33 +2356,35 @@ namespace QRCoderTests
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_throw_incompatible_reftype()
         {
-            var contactGeneral = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
-            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.NON);
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
             var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
             var amount = 100.25m;
             var reqDateOfPayment = new DateTime(2017, 03, 01);
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, contactGeneral, amount, reqDateOfPayment, contactGeneral));
+            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.SwissQrCodeException>(exception);
-            exception.Message.ShouldBe("If QR-IBAN is used, you have to choose \"QRR\" or \"SCOR\" as reference type!");
+            exception.Message.ShouldBe("If QR-IBAN is used, you have to choose \"QRR\" as reference type!");
         }
 
         [Fact]
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_throw_alt1_too_long()
         {
-            var contactGeneral = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
-            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR);
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
             var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
             var amount = 100.25m;
             var reqDateOfPayment = new DateTime(2017, 03, 01);
             var alt1 = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean ma";
 
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, contactGeneral, amount, reqDateOfPayment, contactGeneral, alt1));
+            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral, alt1));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.SwissQrCodeException>(exception);
@@ -2264,15 +2395,16 @@ namespace QRCoderTests
         [Category("PayloadGenerator/SwissQrCode")]
         public void swissqrcode_generator_should_throw_alt2_too_long()
         {
-            var contactGeneral = new PayloadGenerator.SwissQrCode.Contact("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
-            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2609000000857666015", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
+            var contactGeneral = PayloadGenerator.SwissQrCode.Contact.WithStructuredAddress("John Doe", "3003", "Bern", "CH", "Parlamentsgebäude", "1");
+            var iban = new PayloadGenerator.SwissQrCode.Iban("CH2430043000000789012", PayloadGenerator.SwissQrCode.Iban.IbanType.QrIban);
             var reference = new PayloadGenerator.SwissQrCode.Reference(ReferenceType.QRR);
+            var additionalInformation = new PayloadGenerator.SwissQrCode.AdditionalInformation("This is my unstructured message.", "Some bill information here...");
             var currency = PayloadGenerator.SwissQrCode.Currency.CHF;
             var amount = 100.25m;
             var reqDateOfPayment = new DateTime(2017, 03, 01);
             var alt1 = "lorem ipsum";
             var alt2 = "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean ma";
-            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, contactGeneral, amount, reqDateOfPayment, contactGeneral, alt1, alt2));
+            var exception = Record.Exception(() => new PayloadGenerator.SwissQrCode(iban, currency, contactGeneral, reference, additionalInformation, contactGeneral, amount, reqDateOfPayment, contactGeneral, alt1, alt2));
 
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.SwissQrCode.SwissQrCodeException>(exception);
@@ -2312,7 +2444,7 @@ namespace QRCoderTests
             pg.ToString().ShouldBe("otpauth://hotp/Google:test@google.com?secret=pwq65q55&issuer=Google&counter=500");
         }
         //TODO: Include more tests for the one time password payload generator
-        
+
 
         [Fact]
         [Category("PayloadGenerator/ShadowSocksConfig")]
@@ -2339,13 +2471,13 @@ namespace QRCoderTests
             var method = PayloadGenerator.ShadowSocksConfig.Method.Rc4Md5;
             var tag = "server42";
             var generator = new PayloadGenerator.ShadowSocksConfig(host, port, password, method, tag);
-           
+
             generator
                 .ToString()
                 .ShouldBe("ss://cmM0LW1kNTpzM2NyM3RAMTkyLjE2OC4yLjU6NjU1MzU=#server42");
         }
 
-        
+
         [Fact]
         [Category("PayloadGenerator/ShadowSocksConfig")]
         public void shadowsocks_generator_should_throw_portrange_low_exception()
@@ -2354,7 +2486,7 @@ namespace QRCoderTests
             var port = 0;
             var password = "s3cr3t";
             var method = PayloadGenerator.ShadowSocksConfig.Method.Rc4Md5;
-            
+
             var exception = Record.Exception(() => new PayloadGenerator.ShadowSocksConfig(host, port, password, method));
 
             Assert.NotNull(exception);
@@ -2377,6 +2509,24 @@ namespace QRCoderTests
             Assert.NotNull(exception);
             Assert.IsType<PayloadGenerator.ShadowSocksConfig.ShadowSocksConfigException>(exception);
             exception.Message.ShouldBe("Value of 'port' must be within 0 and 65535.");
+        }
+
+
+        [Fact]
+        [Category("PayloadGenerator/ShadowSocksConfig")]
+        public void shadowsocks_generator_can_generate_payload_with_plugin()
+        {
+            var host = "192.168.100.1";
+            var port = 8888;
+            var password = "test";
+            var method = PayloadGenerator.ShadowSocksConfig.Method.BfCfb;
+            var plugin = "obfs-local";
+            var pluginOption = "obfs=http;obfs-host=google.com";
+            var generator = new PayloadGenerator.ShadowSocksConfig(host, port, password, method, plugin, pluginOption);
+
+            generator
+                .ToString()
+                .ShouldBe("ss://YmYtY2ZiOnRlc3Q@192.168.100.1:8888/?plugin=obfs-local%3bobfs%3dhttp%3bobfs-host%3dgoogle.com");
         }
 
 
@@ -2406,7 +2556,7 @@ namespace QRCoderTests
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
             var email = "me@john.doe";
-            var birthday = new DateTime(1970,02,01);
+            var birthday = new DateTime(1970, 02, 01);
             var website = "http://john.doe";
             var street = "Long street";
             var houseNumber = "42";
@@ -2420,7 +2570,35 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("MECARD+\r\nN:Doe, John\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,Long street 42,Super-Town,,12345,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
+                .ShouldBe("MECARD+\r\nN:Doe, John\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,Long street 42,12345,Super-Town,,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/ContactData")]
+        public void contactdata_generator_can_generate_payload_full_mecard_reversed()
+        {
+            var firstname = "John";
+            var lastname = "Doe";
+            var nickname = "Johnny";
+            var phone = "+4253212222";
+            var mobilePhone = "+421701234567";
+            var workPhone = "+4253211337";
+            var email = "me@john.doe";
+            var birthday = new DateTime(1970, 02, 01);
+            var website = "http://john.doe";
+            var street = "Long street";
+            var houseNumber = "42";
+            var city = "Super-Town";
+            var zipCode = "12345";
+            var country = "Starlight Country";
+            var note = "Badass programmer.";
+            var outputType = PayloadGenerator.ContactData.ContactOutputType.MeCard;
+
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, addressOrder: PayloadGenerator.ContactData.AddressOrder.Reversed);
+
+            generator
+                .ToString()
+                .ShouldBe("MECARD+\r\nN:Doe, John\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,42 Long street,Super-Town,,12345,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
         }
 
         [Fact]
@@ -2448,7 +2626,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:2.1\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;HOME;VOICE:+4253212222\r\nTEL;HOME;CELL:+421701234567\r\nTEL;WORK;VOICE:+4253211337\r\nADR;HOME;PREF:;;Long street 42;Super-Town;;12345;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:2.1\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;HOME;VOICE:+4253212222\r\nTEL;HOME;CELL:+421701234567\r\nTEL;WORK;VOICE:+4253211337\r\nADR;HOME;PREF:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nEND:VCARD");
         }
 
         [Fact]
@@ -2476,7 +2654,7 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=HOME,VOICE:+4253212222\r\nTEL;TYPE=HOME,CELL:+421701234567\r\nTEL;TYPE=WORK,VOICE:+4253211337\r\nADR;TYPE=HOME,PREF:;;Long street 42;Super-Town;;12345;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=HOME,VOICE:+4253212222\r\nTEL;TYPE=HOME,CELL:+421701234567\r\nTEL;TYPE=WORK,VOICE:+4253211337\r\nADR;TYPE=HOME,PREF:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
         }
 
         [Fact]
@@ -2504,19 +2682,60 @@ namespace QRCoderTests
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;Long street 42;Super-Town;;12345;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/ContactData")]
+        public void contactdata_generator_can_generate_payload_full_vcard4_reverse()
+        {
+            var firstname = "John";
+            var lastname = "Doe";
+            var nickname = "Johnny";
+            var phone = "+4253212222";
+            var mobilePhone = "+421701234567";
+            var workPhone = "+4253211337";
+            var email = "me@john.doe";
+            var birthday = new DateTime(1970, 02, 01);
+            var website = "http://john.doe";
+            var street = "Long street";
+            var houseNumber = "42";
+            var city = "Super-Town";
+            var zipCode = "12345";
+            var country = "Starlight Country";
+            var note = "Badass programmer.";
+            var outputType = PayloadGenerator.ContactData.ContactOutputType.VCard4;
+
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, addressOrder: PayloadGenerator.ContactData.AddressOrder.Reversed);
+
+            generator
+                .ToString()
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;42 Long street;Super-Town;;12345;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
         }
 
         [Fact]
         [Category("PayloadGenerator/WhatsAppMessage")]
         public void whatsapp_generator_can_generate_payload_simple()
         {
+            var number = "01601234567";
+            var msg = "This is a sample message with Umlauts: Ä,ö, ü and ß.";
+            var generator = new PayloadGenerator.WhatsAppMessage(number, msg);
+
+            generator
+                .ToString()
+                .ShouldBe("whatsapp://send?phone=01601234567&text=This%20is%20a%20sample%20message%20with%20Umlauts%3A%20%C3%84%2C%C3%B6%2C%20%C3%BC%20and%20%C3%9F.");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/WhatsAppMessage")]
+        public void whatsapp_should_add_unused_params()
+        {
             var msg = "This is a sample message with Umlauts: Ä,ö, ü and ß.";
             var generator = new PayloadGenerator.WhatsAppMessage(msg);
 
             generator
                 .ToString()
-                .ShouldBe("whatsapp://send?text=This%20is%20a%20sample%20message%20with%20Umlauts%3A%20%C3%84%2C%C3%B6%2C%20%C3%BC%20and%20%C3%9F.");
+                .ShouldBe("whatsapp://send?phone=&text=This%20is%20a%20sample%20message%20with%20Umlauts%3A%20%C3%84%2C%C3%B6%2C%20%C3%BC%20and%20%C3%9F.");
         }
 
 

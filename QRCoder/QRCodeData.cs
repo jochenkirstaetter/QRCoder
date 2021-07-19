@@ -12,7 +12,7 @@ namespace QRCoder
     public class QRCodeData : IDisposable
     {
         public List<BitArray> ModuleMatrix { get; set; }
-        
+
         public QRCodeData(int version)
         {
             this.Version = version;
@@ -21,7 +21,7 @@ namespace QRCoder
             for (var i = 0; i < size; i++)
                 this.ModuleMatrix.Add(new BitArray(size));
         }
-#if !PCL
+#if NETFRAMEWORK || NETSTANDARD2_0
         public QRCodeData(string pathToRawData, Compression compressMode) : this(File.ReadAllBytes(pathToRawData), compressMode)
         {
         }
@@ -31,7 +31,7 @@ namespace QRCoder
             var bytes = new List<byte>(rawData);
 
             //Decompress
-            if (compressMode.Equals(Compression.Deflate))
+            if (compressMode == Compression.Deflate)
             {
                 using (var input = new MemoryStream(bytes.ToArray()))
                 {
@@ -42,10 +42,10 @@ namespace QRCoder
                             Stream4Methods.CopyTo(dstream, output);
                         }
                         bytes = new List<byte>(output.ToArray());
-                    }                    
-                }                    
+                    }
+                }
             }
-            else if (compressMode.Equals(Compression.GZip))
+            else if (compressMode == Compression.GZip)
             {
                 using (var input = new MemoryStream(bytes.ToArray()))
                 {
@@ -61,7 +61,7 @@ namespace QRCoder
             }
 
             if (bytes[0] != 0x51 || bytes[1] != 0x52 || bytes[2] != 0x52)
-                throw new Exception("Invalid raw data file. Filetype doesn't match \"QRR\".");            
+                throw new Exception("Invalid raw data file. Filetype doesn't match \"QRR\".");
 
             //Set QR code version
             var sideLen = (int)bytes[4];
@@ -69,18 +69,18 @@ namespace QRCoder
             this.Version = (sideLen - 21 - 8) / 4 + 1;
 
             //Unpack
-            var modules = new Queue<bool>();
+            var modules = new Queue<bool>(8 * bytes.Count);
             foreach (var b in bytes)
             {
                 var bArr = new BitArray(new byte[] { b });
                 for (int i = 7; i >= 0; i--)
                 {
                     modules.Enqueue((b & (1 << i)) != 0);
-                }               
+                }
             }
-            
+
             //Build module matrix
-            this.ModuleMatrix = new List<BitArray>();
+            this.ModuleMatrix = new List<BitArray>(sideLen);
             for (int y = 0; y < sideLen; y++)
             {
                 this.ModuleMatrix.Add(new BitArray(sideLen));
@@ -89,7 +89,7 @@ namespace QRCoder
                     this.ModuleMatrix[y][x] = modules.Dequeue();
                 }
             }
-            
+
         }
 
         public byte[] GetRawData(Compression compressMode)
@@ -98,7 +98,7 @@ namespace QRCoder
 
             //Add header - signature ("QRR")
             bytes.AddRange(new byte[]{ 0x51, 0x52, 0x52, 0x00 });
-            
+
             //Add header - rowsize
             bytes.Add((byte)ModuleMatrix.Count);
 
@@ -129,7 +129,7 @@ namespace QRCoder
             var rawData = bytes.ToArray();
 
             //Compress stream (optional)
-            if (compressMode.Equals(Compression.Deflate))
+            if (compressMode == Compression.Deflate)
             {
                 using (var output = new MemoryStream())
                 {
@@ -140,7 +140,7 @@ namespace QRCoder
                     rawData = output.ToArray();
                 }
             }
-            else if (compressMode.Equals(Compression.GZip))
+            else if (compressMode == Compression.GZip)
             {
                 using (var output = new MemoryStream())
                 {
@@ -150,19 +150,19 @@ namespace QRCoder
                     }
                     rawData = output.ToArray();
                 }
-            }           
+            }
             return rawData;
         }
 
-#if !PCL
+#if NETFRAMEWORK || NETSTANDARD2_0
         public void SaveRawData(string filePath, Compression compressMode)
-        {         
+        {
             File.WriteAllBytes(filePath, GetRawData(compressMode));
         }
 #endif
 
         public int Version { get; private set; }
-        
+
         private static int ModulesPerSideFromVersion(int version)
         {
             return 21 + (version - 1) * 4;
@@ -172,7 +172,7 @@ namespace QRCoder
         {
             this.ModuleMatrix = null;
             this.Version = 0;
-            
+
         }
 
         public enum Compression

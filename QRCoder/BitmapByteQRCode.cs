@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using static QRCoder.QRCodeGenerator;
 
 namespace QRCoder
 {
-  
+
     // ReSharper disable once InconsistentNaming
     public class BitmapByteQRCode : AbstractQRCode, IDisposable
     {
@@ -29,7 +29,7 @@ namespace QRCoder
         public byte[] GetGraphic(int pixelsPerModule, byte[] darkColorRgb, byte[] lightColorRgb)
         {
             var sideLength = this.QrCodeData.ModuleMatrix.Count * pixelsPerModule;
-           
+
             var moduleDark = darkColorRgb.Reverse();
             var moduleLight = lightColorRgb.Reverse();
 
@@ -37,15 +37,15 @@ namespace QRCoder
 
             //header
             bmp.AddRange(new byte[] { 0x42, 0x4D, 0x4C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1A, 0x00, 0x00, 0x00, 0x0C, 0x00, 0x00, 0x00 });
-            
+
             //width
             bmp.AddRange(IntTo4Byte(sideLength));
             //height
             bmp.AddRange(IntTo4Byte(sideLength));
-            
+
             //header end
             bmp.AddRange(new byte[] { 0x01, 0x00, 0x18, 0x00 });
-           
+
             //draw qr code
             for (var x = sideLength-1; x >= 0; x = x - pixelsPerModule)
             {
@@ -82,7 +82,7 @@ namespace QRCoder
                 colorString = colorString.Substring(1);
             byte[] byteColor = new byte[colorString.Length / 2];
             for (int i = 0; i < byteColor.Length; i++)
-                byteColor[2-i] = byte.Parse(colorString.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);            
+                byteColor[i] = byte.Parse(colorString.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);            
             return byteColor;
         }
 
@@ -95,6 +95,31 @@ namespace QRCoder
                 bytes[0] = (byte)(inp);
             }
             return bytes;
+        }
+    }
+
+
+    public static class BitmapByteQRCodeHelper
+    {
+        public static byte[] GetQRCode(string plainText, int pixelsPerModule, string darkColorHtmlHex,
+            string lightColorHtmlHex, ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false,
+            EciMode eciMode = EciMode.Default, int requestedVersion = -1)
+        {
+            using (var qrGenerator = new QRCodeGenerator())
+            using (
+                var qrCodeData = qrGenerator.CreateQrCode(plainText, eccLevel, forceUtf8, utf8BOM, eciMode,
+                    requestedVersion))
+            using (var qrCode = new BitmapByteQRCode(qrCodeData))
+                return qrCode.GetGraphic(pixelsPerModule, darkColorHtmlHex, lightColorHtmlHex);
+        }
+
+        public static byte[] GetQRCode(string txt, QRCodeGenerator.ECCLevel eccLevel, int size)
+        {
+            using (var qrGen = new QRCodeGenerator())
+            using (var qrCode = qrGen.CreateQrCode(txt, eccLevel))
+            using (var qrBmp = new BitmapByteQRCode(qrCode))
+                return qrBmp.GetGraphic(size);
+
         }
     }
 }
