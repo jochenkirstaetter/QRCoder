@@ -107,6 +107,187 @@ namespace QRCoderTests
 #endif
         }
 
+        [Fact]
+        [Category("PayloadGenerator/BitcoinCashAddress")]
+        public void bitcoincash_address_generator_can_generate_address()
+        {
+            var address = "qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890";
+            var amount = .123;
+            var label = "Some Label to Encode";
+            var message = "Some Message to Encode";
+
+            var generator = new PayloadGenerator.BitcoinCashAddress(address, amount, label, message);
+
+            generator
+                .ToString()
+                .ShouldBe("bitcoincash:qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890?label=Some%20Label%20to%20Encode&message=Some%20Message%20to%20Encode&amount=.123");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/BitcoinCashAddress")]
+        public void bitcoincash_address_generator_should_skip_missing_label()
+        {
+            var address = "qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890";
+            var amount = .123;
+            var message = "Some Message to Encode";
+
+
+            var generator = new PayloadGenerator.BitcoinCashAddress(address, amount, null, message);
+
+            generator
+                .ToString()
+                .ShouldNotContain("label");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/BitcoinCashAddress")]
+        public void bitcoincash_address_generator_should_skip_missing_message()
+        {
+            var address = "qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890";
+            var amount = .123;
+
+
+            var generator = new PayloadGenerator.BitcoinCashAddress(address, amount);
+
+            generator
+                .ToString()
+                .ShouldNotContain("message");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/BitcoinCashAddress")]
+        public void bitcoincash_address_generator_should_round_to_satoshi()
+        {
+            var address = "qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890";
+            var amount = .123456789;
+
+
+            var generator = new PayloadGenerator.BitcoinCashAddress(address, amount);
+
+            generator
+                .ToString()
+                .ShouldContain("amount=.12345679");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/BitcoinCashAddress")]
+        public void bitcoincash_address_generator_disregards_current_culture()
+        {
+#if NETCOREAPP1_1
+            var currentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("de-DE");
+#else
+            var currentCulture = Thread.CurrentThread.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+#endif
+
+            var address = "qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890";
+            var amount = .123;
+
+
+            var generator = new PayloadGenerator.BitcoinCashAddress(address, amount);
+
+            generator
+                .ToString()
+                .ShouldBe("bitcoincash:qqtlfk37qyey50f4wfuhc7jw85zsdp8s2swffjk890?amount=.123");
+
+#if NETCOREAPP1_1
+            CultureInfo.DefaultThreadCurrentCulture = currentCulture;
+#else
+            Thread.CurrentThread.CurrentCulture = currentCulture;
+#endif
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/LitecoinAddress")]
+        public void litecoin_address_generator_can_generate_address()
+        {
+            var address = "LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54";
+            var amount = .123;
+            var label = "Some Label to Encode";
+            var message = "Some Message to Encode";
+
+            var generator = new PayloadGenerator.LitecoinAddress(address, amount, label, message);
+
+            generator
+                .ToString()
+                .ShouldBe("litecoin:LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54?label=Some%20Label%20to%20Encode&message=Some%20Message%20to%20Encode&amount=.123");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/LitecoinAddress")]
+        public void litecoin_address_generator_should_skip_missing_label()
+        {
+            var address = "LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54";
+            var amount = .123;
+            var message = "Some Message to Encode";
+
+
+            var generator = new PayloadGenerator.LitecoinAddress(address, amount, null, message);
+
+            generator
+                .ToString()
+                .ShouldNotContain("label");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/LitecoinAddress")]
+        public void litecoin_address_generator_should_skip_missing_message()
+        {
+            var address = "LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54";
+            var amount = .123;
+
+
+            var generator = new PayloadGenerator.LitecoinAddress(address, amount);
+
+            generator
+                .ToString()
+                .ShouldNotContain("message");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/LitecoinAddress")]
+        public void litecoin_address_generator_should_round_to_satoshi()
+        {
+            var address = "LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54";
+            var amount = .123456789;
+
+
+            var generator = new PayloadGenerator.LitecoinAddress(address, amount);
+
+            generator
+                .ToString()
+                .ShouldContain("amount=.12345679");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/LitecoinAddress")]
+        public void litecoin_address_generator_disregards_current_culture()
+        {
+#if NETCOREAPP1_1
+            var currentCulture = CultureInfo.DefaultThreadCurrentCulture;
+            CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("de-DE");
+#else
+            var currentCulture = Thread.CurrentThread.CurrentCulture;
+            Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
+#endif
+
+            var address = "LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54";
+            var amount = .123;
+
+
+            var generator = new PayloadGenerator.LitecoinAddress(address, amount);
+
+            generator
+                .ToString()
+                .ShouldBe("litecoin:LY1t7iLnwtPCb1DPZP38FA835XzFqXBq54?amount=.123");
+
+#if NETCOREAPP1_1
+            CultureInfo.DefaultThreadCurrentCulture = currentCulture;
+#else
+            Thread.CurrentThread.CurrentCulture = currentCulture;
+#endif
+        }
 
         [Fact]
         [Category("PayloadGenerator/WiFi")]
@@ -1064,9 +1245,9 @@ namespace QRCoderTests
             var bnc = "100205000";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
@@ -1084,9 +1265,9 @@ namespace QRCoderTests
             var amount = 10.00m;
             var postingKey = 69;
             Currency currency = Currency.USD;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account, bnc, amount, "", 0, null, null, reason, postingKey, currency, DateTime.Now);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
@@ -1104,9 +1285,9 @@ namespace QRCoderTests
             var amount = 10.00m;
             var postingKey = 69;
             Currency currency = Currency.USD;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.singledirectdebit, name, account, bnc, amount, "", 0, null, null, reason, postingKey, currency, DateTime.Now);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://singledirectdebit?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
@@ -1128,9 +1309,9 @@ namespace QRCoderTests
             var periodicFirstExecutionDate = DateTime.Now;
             var periodicLastExecutionDate = DateTime.Now.AddMonths(3);
             Currency currency = Currency.USD;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.periodicsinglepayment, name, account, bnc, amount, periodicTimeunit, periodicTimeunitRotation, periodicFirstExecutionDate, periodicLastExecutionDate, reason, postingKey, currency, DateTime.Now);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://periodicsinglepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&postingkey=69&amount=10,00&reason=Thanks%20for%20all%20your%20efforts&currency=USD&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "&periodictimeunit=W&periodictimeunitrotation=2&periodicfirstexecutiondate=" + periodicFirstExecutionDate.ToString("ddMMyyyy") + "&periodiclastexecutiondate=" + periodicLastExecutionDate.ToString("ddMMyyyy"));
@@ -1311,9 +1492,9 @@ namespace QRCoderTests
             var bnc = "100205000";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=01194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
@@ -1328,9 +1509,9 @@ namespace QRCoderTests
             var bnc = "10020 5000";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
@@ -1379,9 +1560,9 @@ namespace QRCoderTests
             var bnc = "10020 5000";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10;
-
+#pragma warning disable CS0612
             var generator = new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount);
-
+#pragma warning restore CS0612
             generator
                 .ToString()
                 .ShouldBe("bank://singlepayment?name=Wikimedia%20F%C3%B6rdergesellschaft&account=001194700&bnc=100205000&amount=10,00&currency=EUR&executiondate=" + DateTime.Now.ToString("ddMMyyyy") + "");
@@ -1395,9 +1576,9 @@ namespace QRCoderTests
             var account = "0001194700";
             var bnc = "10020 5000";
             var name = "Wikimedia Fördergesellschaft";
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account, bnc, "", "", "New business contact."));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("The constructor without an amount may only ne used with authority types 'contact' and 'contact_v2'.");
@@ -1451,9 +1632,9 @@ namespace QRCoderTests
             var periodicFirstExecutionDate = DateTime.Now;
             var periodicLastExecutionDate = DateTime.Now.AddMonths(3);
             Currency currency = Currency.USD;
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.periodicsinglepayment, name, account, bnc, amount, periodicTimeunit, periodicTimeunitRotation, periodicFirstExecutionDate, periodicLastExecutionDate, reason, postingKey, currency, DateTime.Now));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("When using 'periodicsinglepayment' as authority type, the parameters 'periodicTimeunit' and 'periodicTimeunitRotation' must be set.");
@@ -1468,9 +1649,9 @@ namespace QRCoderTests
             var bic = "BFSWDE33BER";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, iban: iban, bic: bic, amount: amount));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("The constructor with 'iban' and 'bic' may only be used with 'SEPA' authority types. Either choose another authority type or switch constructor.");
@@ -1547,9 +1728,9 @@ namespace QRCoderTests
             var bnc = "100205000";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("The account entered isn't valid.");
@@ -1564,9 +1745,9 @@ namespace QRCoderTests
             var bnc = "10020500023545626226262";
             var name = "Wikimedia Fördergesellschaft";
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("The bnc entered isn't valid.");
@@ -1582,9 +1763,9 @@ namespace QRCoderTests
             var name = "Wikimedia Fördergesellschaft";
             var postingKey = 101;
             var amount = 10.00m;
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account: account, bnc: bnc, amount: amount, postingKey: postingKey));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("PostingKey must be within 0 and 99.");
@@ -1741,10 +1922,9 @@ namespace QRCoderTests
             var postingKey = 69;
             var executionDate = new DateTime(2017, 1, 1);
             Currency currency = Currency.USD;
-
-
+#pragma warning disable CS0612
             var exception = Record.Exception(() => new PayloadGenerator.BezahlCode(AuthorityType.singlepayment, name, account, bnc, amount, "", 0, null, null, reason, postingKey, currency, executionDate));
-
+#pragma warning restore CS0612
             Assert.NotNull(exception);
             Assert.IsType<BezahlCodeException>(exception);
             exception.Message.ShouldBe("Execution date must be today or in future.");
@@ -1921,6 +2101,20 @@ namespace QRCoderTests
             generator
                 .ToString()
                 .ShouldBe("CH2609000000857666015");
+        }
+
+        [Fact]
+        [Category("PayloadGenerator/SwissQrCode.Iban")]
+        public void swissqrcode_generator_should_generate_iban_2()
+        {
+            var iban = "CH47048350000GABRIELS";
+            var ibanType = PayloadGenerator.SwissQrCode.Iban.IbanType.Iban;
+
+            var generator = new PayloadGenerator.SwissQrCode.Iban(iban, ibanType);
+
+            generator
+                .ToString()
+                .ShouldBe("CH47048350000GABRIELS");
         }
 
         [Fact]
@@ -2552,6 +2746,7 @@ namespace QRCoderTests
             var firstname = "John";
             var lastname = "Doe";
             var nickname = "Johnny";
+            var org = "Johnny's Badass Programming";
             var phone = "+4253212222";
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
@@ -2566,11 +2761,11 @@ namespace QRCoderTests
             var note = "Badass programmer.";
             var outputType = PayloadGenerator.ContactData.ContactOutputType.MeCard;
 
-            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note);
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, org: org);
 
             generator
                 .ToString()
-                .ShouldBe("MECARD+\r\nN:Doe, John\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,Long street 42,12345,Super-Town,,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
+                .ShouldBe("MECARD+\r\nN:Doe, John\r\nORG:Johnny's Badass Programming\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,Long street 42,12345,Super-Town,,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
         }
 
         [Fact]
@@ -2580,6 +2775,7 @@ namespace QRCoderTests
             var firstname = "John";
             var lastname = "Doe";
             var nickname = "Johnny";
+            var org = "Johnny's Badass Programming";
             var phone = "+4253212222";
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
@@ -2594,11 +2790,11 @@ namespace QRCoderTests
             var note = "Badass programmer.";
             var outputType = PayloadGenerator.ContactData.ContactOutputType.MeCard;
 
-            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, addressOrder: PayloadGenerator.ContactData.AddressOrder.Reversed);
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, addressOrder: PayloadGenerator.ContactData.AddressOrder.Reversed, org: org);
 
             generator
                 .ToString()
-                .ShouldBe("MECARD+\r\nN:Doe, John\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,42 Long street,Super-Town,,12345,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
+                .ShouldBe("MECARD+\r\nN:Doe, John\r\nORG:Johnny's Badass Programming\r\nTEL:+4253212222\r\nTEL:+421701234567\r\nTEL:+4253211337\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nBDAY:19700201\r\nADR:,,42 Long street,Super-Town,,12345,Starlight Country\r\nURL:http://john.doe\r\nNICKNAME:Johnny");
         }
 
         [Fact]
@@ -2608,6 +2804,7 @@ namespace QRCoderTests
             var firstname = "John";
             var lastname = "Doe";
             var nickname = "Johnny";
+            var org = "Johnny's Badass Programming";
             var phone = "+4253212222";
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
@@ -2622,11 +2819,11 @@ namespace QRCoderTests
             var note = "Badass programmer.";
             var outputType = PayloadGenerator.ContactData.ContactOutputType.VCard21;
 
-            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note);
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, org: org);
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:2.1\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;HOME;VOICE:+4253212222\r\nTEL;HOME;CELL:+421701234567\r\nTEL;WORK;VOICE:+4253211337\r\nADR;HOME;PREF:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:2.1\r\nN:Doe;John;;;\r\nFN:John Doe\r\nORG:Johnny's Badass Programming\r\nTEL;HOME;VOICE:+4253212222\r\nTEL;HOME;CELL:+421701234567\r\nTEL;WORK;VOICE:+4253211337\r\nADR;HOME;PREF:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nEND:VCARD");
         }
 
         [Fact]
@@ -2636,6 +2833,7 @@ namespace QRCoderTests
             var firstname = "John";
             var lastname = "Doe";
             var nickname = "Johnny";
+            var org = "Johnny's Badass Programming";
             var phone = "+4253212222";
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
@@ -2650,11 +2848,11 @@ namespace QRCoderTests
             var note = "Badass programmer.";
             var outputType = PayloadGenerator.ContactData.ContactOutputType.VCard3;
 
-            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note);
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, org: org);
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=HOME,VOICE:+4253212222\r\nTEL;TYPE=HOME,CELL:+421701234567\r\nTEL;TYPE=WORK,VOICE:+4253211337\r\nADR;TYPE=HOME,PREF:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nORG:Johnny's Badass Programming\r\nTEL;TYPE=HOME,VOICE:+4253212222\r\nTEL;TYPE=HOME,CELL:+421701234567\r\nTEL;TYPE=WORK,VOICE:+4253211337\r\nADR;TYPE=HOME,PREF:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
         }
 
         [Fact]
@@ -2664,6 +2862,7 @@ namespace QRCoderTests
             var firstname = "John";
             var lastname = "Doe";
             var nickname = "Johnny";
+            var org = "Johnny's Badass Programming";
             var phone = "+4253212222";
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
@@ -2678,11 +2877,11 @@ namespace QRCoderTests
             var note = "Badass programmer.";
             var outputType = PayloadGenerator.ContactData.ContactOutputType.VCard4;
 
-            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note);
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, org: org);
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nORG:Johnny's Badass Programming\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;Long street 42;12345;Super-Town;;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
         }
 
         [Fact]
@@ -2692,6 +2891,7 @@ namespace QRCoderTests
             var firstname = "John";
             var lastname = "Doe";
             var nickname = "Johnny";
+            var org = "Johnny's Badass Programming";
             var phone = "+4253212222";
             var mobilePhone = "+421701234567";
             var workPhone = "+4253211337";
@@ -2706,11 +2906,11 @@ namespace QRCoderTests
             var note = "Badass programmer.";
             var outputType = PayloadGenerator.ContactData.ContactOutputType.VCard4;
 
-            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, addressOrder: PayloadGenerator.ContactData.AddressOrder.Reversed);
+            var generator = new PayloadGenerator.ContactData(outputType, firstname, lastname, nickname, phone, mobilePhone, workPhone, email, birthday, website, street, houseNumber, city, zipCode, country, note, addressOrder: PayloadGenerator.ContactData.AddressOrder.Reversed, org: org);
 
             generator
                 .ToString()
-                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;42 Long street;Super-Town;;12345;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
+                .ShouldBe("BEGIN:VCARD\r\nVERSION:4.0\r\nN:Doe;John;;;\r\nFN:John Doe\r\nORG:Johnny's Badass Programming\r\nTEL;TYPE=home,voice;VALUE=uri:tel:+4253212222\r\nTEL;TYPE=home,cell;VALUE=uri:tel:+421701234567\r\nTEL;TYPE=work,voice;VALUE=uri:tel:+4253211337\r\nADR;TYPE=home,pref:;;42 Long street;Super-Town;;12345;Starlight Country\r\nBDAY:19700201\r\nURL:http://john.doe\r\nEMAIL:me@john.doe\r\nNOTE:Badass programmer.\r\nNICKNAME:Johnny\r\nEND:VCARD");
         }
 
         [Fact]

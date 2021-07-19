@@ -129,7 +129,17 @@ namespace QRCoder
             int version = requestedVersion;
             if (version == -1)
             {
-                version = GetVersion(dataInputLength, encoding, eccLevel);
+                version = GetVersion(dataInputLength+(eciMode != EciMode.Default?2:0), encoding, eccLevel);
+            }
+            else
+            {
+                //Version was passed as fixed version via parameter. Thus let's check if chosen version is valid.
+                var minVersion = GetVersion(dataInputLength + (eciMode != EciMode.Default ? 2 : 0), encoding, eccLevel);
+                if (minVersion > version)
+                {
+                    var maxSizeByte = capacityTable[version - 1].Details.First(x => x.ErrorCorrectionLevel == eccLevel).CapacityDict[encoding];
+                    throw new QRCoder.Exceptions.DataTooLongException(eccLevel.ToString(), encoding.ToString(), version, maxSizeByte);
+                }                    
             }
 
             string modeIndicator = String.Empty;
@@ -1002,12 +1012,12 @@ namespace QRCoder
 
         private static int GetDataLength(EncodingMode encoding, string plainText, string codedText, bool forceUtf8)
         {
-            return forceUtf8 || IsUtf8(encoding, plainText) ? (codedText.Length / 8) : plainText.Length;
+            return forceUtf8 || IsUtf8(encoding, plainText, forceUtf8) ? (codedText.Length / 8) : plainText.Length;
         }
 
-        private static bool IsUtf8(EncodingMode encoding, string plainText)
+        private static bool IsUtf8(EncodingMode encoding, string plainText, bool forceUtf8)
         {
-            return (encoding == EncodingMode.Byte && !IsValidISO(plainText));
+            return (encoding == EncodingMode.Byte && (!IsValidISO(plainText) || forceUtf8));
         }
 
         private static bool IsValidISO(string input)
@@ -1094,7 +1104,7 @@ namespace QRCoder
             Encoding utf8 = Encoding.UTF8;
             byte[] utfBytes = utf8.GetBytes(value);
             byte[] isoBytes = Encoding.Convert(utf8, iso, utfBytes);
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NETFRAMEWORK || NETSTANDARD2_0 || NET5_0
             return iso.GetString(isoBytes);
 #else
             return iso.GetString(isoBytes, 0, isoBytes.Length);

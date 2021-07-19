@@ -1,4 +1,4 @@
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if NETFRAMEWORK || NETSTANDARD2_0 || NET5_0
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -98,17 +98,7 @@ namespace QRCoder
                         if (module)
                         {
                             var r = new Rectangle(x - offset, y - offset, pixelsPerModule, pixelsPerModule);
-
-                            if (drawIconFlag)
-                            {
-                                var region = new Region(r);
-                                region.Exclude(iconPath);
-                                gfx.FillRegion(darkBrush, region);
-                            }
-                            else
-                            {
-                                gfx.FillRectangle(darkBrush, r);
-                            }
+                            gfx.FillRectangle(darkBrush, r);
                         }
                         else
                         {
